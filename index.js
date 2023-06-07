@@ -28,10 +28,16 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
 
+        const sliderCollection = client.db('danceRevolutions').collection('slider-categories');
 
+        // Slider Categories API:
+        app.get('/slider-categories', async (req, res) => {
+            const result = await sliderCollection.find().toArray() ;
+            res.send(result);
+        })
 
-
-
+        // Users API:
+        
 
 
 
