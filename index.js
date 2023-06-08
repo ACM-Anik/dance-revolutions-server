@@ -44,7 +44,10 @@ async function run() {
             res.send(result);
         })
 
-        
+        app.get('/approvedClasses', async (req, res) => {
+            const result = await classesCollection.find({status: "Approved" }).toArray();
+            res.send(result);
+        })
 
         // Users API:
         
