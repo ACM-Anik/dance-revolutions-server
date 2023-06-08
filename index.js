@@ -27,8 +27,9 @@ async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
-
+        
         const sliderCollection = client.db('danceRevolutions').collection('slider-categories');
+        const usersCollection = client.db('danceRevolutions').collection('users');
         const classesCollection = client.db('danceRevolutions').collection('classes');
         const selectedClassesCollection = client.db('danceRevolutions').collection('selectedClasses');
 
@@ -38,6 +39,21 @@ async function run() {
             const result = await sliderCollection.find().toArray() ;
             res.send(result);
         })
+
+        
+        // Users API:
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const query = {email: user.email}
+            const existed = await usersCollection.findOne(query);
+            if(existed){
+                return res.send({message: 'User already exists!'});
+            }
+            
+            const result = await usersCollection.insertOne(user);
+            res.send(result);
+        })
+
 
         // Classes API:-
         app.get('/topClasses', async (req, res) => {
@@ -50,19 +66,13 @@ async function run() {
             res.send(result);
         })
 
-        // Users API:
-        // app.post('/users', async (req, res) => {
-
-        // })
-
         // Selected classes API
         app.post('/selectedClasses', async (req, res) => {
             const item = req.body;
-            console.log(item);
+            // console.log(item);
             const result = await selectedClassesCollection.insertOne(item);
             res.send(result);
         })
-
 
 
         // Send a ping to confirm a successful connection
