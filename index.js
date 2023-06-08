@@ -29,12 +29,22 @@ async function run() {
         await client.connect();
 
         const sliderCollection = client.db('danceRevolutions').collection('slider-categories');
+        const classesCollection = client.db('danceRevolutions').collection('classes');
+
 
         // Slider Categories API:
         app.get('/slider-categories', async (req, res) => {
             const result = await sliderCollection.find().toArray() ;
             res.send(result);
         })
+
+        // Classes API:-
+        app.get('/topClasses', async (req, res) => {
+            const result = await classesCollection.find().sort({availableSeats: 1}).limit(6).toArray();
+            res.send(result);
+        })
+
+        
 
         // Users API:
         
