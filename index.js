@@ -30,6 +30,7 @@ async function run() {
 
         const sliderCollection = client.db('danceRevolutions').collection('slider-categories');
         const classesCollection = client.db('danceRevolutions').collection('classes');
+        const selectedClassesCollection = client.db('danceRevolutions').collection('selectedClasses');
 
 
         // Slider Categories API:
@@ -50,7 +51,17 @@ async function run() {
         })
 
         // Users API:
-        
+        // app.post('/users', async (req, res) => {
+
+        // })
+
+        // Selected classes API
+        app.post('/selectedClasses', async (req, res) => {
+            const item = req.body;
+            console.log(item);
+            const result = await selectedClassesCollection.insertOne(item);
+            res.send(result);
+        })
 
 
 
