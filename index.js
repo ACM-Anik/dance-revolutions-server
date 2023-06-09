@@ -59,6 +59,17 @@ async function run() {
             res.send({token});
         })
 
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            if (user?.role !== 'Admin') {
+                return res.status(403).send({ error: true, message: 'Forbidden message!' })
+            }
+            next();
+        }
+
+
 
         // Slider Categories API:--------
         app.get('/slider-categories', async (req, res) => {
@@ -68,8 +79,43 @@ async function run() {
 
         
         // Users API:--------
-        app.get('/users', async (req, res) => {
+        // --------------------------
+        app.get('/users',verifyJWT, verifyAdmin, async (req, res) => {
             const result = await usersCollection.find().toArray();
+            res.send(result);
+        })
+        
+        app.get('/users/instructors', async (req, res) => {
+            
+            const result = await usersCollection.find({role: "Instructor" }).toArray();
+            res.send(result);
+        })
+
+       // isAdmin
+        app.get('/users/admin/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+
+            if (req.decoded.email !== email) {
+                res.send({ Admin: false })
+            }
+
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            const result = { Admin: user?.role === 'Admin' };
+            res.send(result);
+        })
+
+        // isInstructor
+        app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+
+            if (req.decoded.email !== email) {
+                res.send({ Instructor: false })
+            }
+
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            const result = { Instructor: user?.role === 'Instructor' };
             res.send(result);
         })
 
@@ -111,6 +157,7 @@ async function run() {
 
 
         // Classes API:--------
+        // ----------------------
         app.get('/topClasses', async (req, res) => {
             const result = await classesCollection.find().sort({availableSeats: 1}).limit(6).toArray();
             res.send(result);
@@ -122,7 +169,7 @@ async function run() {
         })
 
         // Selected classes API
-        app.get('/mySelectedClasses', verifyJWT, async (req, res) => {
+        app.get('/selectedClasses', verifyJWT, async (req, res) => {
             const email = req.query.email;
 
             if (!email) {
@@ -146,10 +193,12 @@ async function run() {
             res.send(result);
         })
 
-
-
-
-
+        app.delete('/selectedClasses/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await selectedClassesCollection.deleteOne(query);
+            res.send(result);
+        })
 
 
 
