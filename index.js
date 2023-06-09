@@ -60,14 +60,14 @@ async function run() {
         })
 
 
-        // Slider Categories API:
+        // Slider Categories API:--------
         app.get('/slider-categories', async (req, res) => {
             const result = await sliderCollection.find().toArray() ;
             res.send(result);
         })
 
         
-        // Users API:-
+        // Users API:--------
         app.get('/users', async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
@@ -110,7 +110,7 @@ async function run() {
         })
 
 
-        // Classes API:-
+        // Classes API:--------
         app.get('/topClasses', async (req, res) => {
             const result = await classesCollection.find().sort({availableSeats: 1}).limit(6).toArray();
             res.send(result);
@@ -122,12 +122,39 @@ async function run() {
         })
 
         // Selected classes API
+        app.get('/mySelectedClasses', verifyJWT, async (req, res) => {
+            const email = req.query.email;
+
+            if (!email) {
+                res.send([]);
+            }
+
+            const decodedEmail = req.decoded.email;
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'Forbidden access!' })
+            }
+
+            const query = { email: email };
+            const result = await selectedClassesCollection.find(query).toArray();
+            res.send(result);
+        });
+
         app.post('/selectedClasses', async (req, res) => {
             const item = req.body;
             // console.log(item);
             const result = await selectedClassesCollection.insertOne(item);
             res.send(result);
         })
+
+
+
+
+
+
+
+
+
+
 
 
         // Send a ping to confirm a successful connection
