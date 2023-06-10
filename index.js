@@ -167,6 +167,45 @@ async function run() {
         //     res.send(result);
         // })
 
+        app.patch('/allClasses/approve/:id',  async (req, res) => {
+            const id = req.params.id;
+            const filter = {_id: new ObjectId(id)};
+            const updateDoc = {
+                $set: {
+                    status: 'Approved'
+                },
+            };
+            const result = await classesCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        })
+
+        app.patch('/allClasses/deny/:id',  async (req, res) => {
+            const id = req.params.id;
+            const filter = {_id: new ObjectId(id)};
+            const updateDoc = {
+                $set: {
+                    status: 'Denied'
+                },
+            };
+            const result = await classesCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        })
+
+        app.patch('/allClasses/feedback/:id',  async (req, res) => {
+            const id = req.params.id;
+            const feedback = req.body.feedback;
+
+            const filter = {_id: new ObjectId(id)};
+            
+            const updateDoc = {
+                $set: {
+                    feedback: feedback
+                },
+            };
+            const result = await classesCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        })
+
         app.get('/topClasses', async (req, res) => {
             const result = await classesCollection.find().sort({availableSeats: 1}).limit(6).toArray();
             res.send(result);
@@ -194,6 +233,12 @@ async function run() {
             const result = await selectedClassesCollection.find(query).toArray();
             res.send(result);
         });
+
+        app.post('/allClasses', verifyJWT, async (req, res) => {
+            const newClass = req.body;
+            const result = await classesCollection.insertOne(newClass);
+            res.send(result);
+        })
 
         app.post('/selectedClasses', async (req, res) => {
             const selectedClass = req.body;
