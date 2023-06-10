@@ -86,7 +86,6 @@ async function run() {
         })
         
         app.get('/users/instructors', async (req, res) => {
-            
             const result = await usersCollection.find({role: "Instructor" }).toArray();
             res.send(result);
         })
@@ -155,9 +154,19 @@ async function run() {
             res.send(result);
         })
 
-
-        // Classes API:--------
         // ----------------------
+        // Classes API:--
+        // ----------------------
+        app.get('/allClasses',  async (req, res) => {
+            const result = await classesCollection.find().toArray();
+            res.send(result);
+        })
+        // ===||(Requirement not clear for this)||===
+        // app.get('/pendingClasses',  async (req, res) => {
+        //     const result = await classesCollection.find({status: "Pending" }).toArray();
+        //     res.send(result);
+        // })
+
         app.get('/topClasses', async (req, res) => {
             const result = await classesCollection.find().sort({availableSeats: 1}).limit(6).toArray();
             res.send(result);
@@ -187,9 +196,16 @@ async function run() {
         });
 
         app.post('/selectedClasses', async (req, res) => {
-            const item = req.body;
-            // console.log(item);
-            const result = await selectedClassesCollection.insertOne(item);
+            const selectedClass = req.body;
+            // console.log(selectedClass);
+            const query = { selectedId: selectedClass.selectedId, email: selectedClass.email };
+            const exists = await selectedClassesCollection.findOne(query);
+
+            if (exists) {
+                return res.send({ message: 'Class already exists!', exists: true})
+            }
+            
+            const result = await selectedClassesCollection.insertOne(selectedClass);
             res.send(result);
         })
 
