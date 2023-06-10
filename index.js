@@ -157,7 +157,7 @@ async function run() {
         // ----------------------
         // Classes API:--
         // ----------------------
-        app.get('/allClasses',  async (req, res) => {
+        app.get('/allClasses', verifyJWT, async (req, res) => {
             const result = await classesCollection.find().toArray();
             res.send(result);
         })
@@ -166,6 +166,23 @@ async function run() {
         //     const result = await classesCollection.find({status: "Pending" }).toArray();
         //     res.send(result);
         // })
+
+        app.get('/myAddedClasses', verifyJWT, async (req, res) => {
+            const email = req.query.email;
+
+            if (!email) {
+                res.send([]);
+            }
+
+            const decodedEmail = req.decoded.email;
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'Forbidden access!' })
+            }
+
+            const query = { instructorEmail: email };
+            const result = await classesCollection.find(query).toArray();
+            res.send(result);
+        })
 
         app.patch('/allClasses/approve/:id',  async (req, res) => {
             const id = req.params.id;
