@@ -87,7 +87,7 @@ async function run() {
             res.send(result);
         })
 
-        app.get('/users/instructors', verifyJWT, async (req, res) => {
+        app.get('/users/instructors', async (req, res) => {
             const result = await usersCollection.find({ role: "Instructor" }).toArray();
             res.send(result);
         })
@@ -168,6 +168,24 @@ async function run() {
         //     const result = await classesCollection.find({status: "Pending" }).toArray();
         //     res.send(result);
         // })
+
+        app.patch('/allClasses/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            // const find = await classesCollection.findOne(filter);
+            // console.log(find);
+
+            const update = { $inc: { availableSeats: -1 } };
+
+            const result = await classesCollection.updateOne(filter, update);
+
+            if (result.modifiedCount === 1) {
+                res.send({ message: 'Successfully reduced 1 seat' });
+            } else {
+                res.status(404).send({ message: 'Class not found' });
+            }
+
+        })
 
         app.get('/myAddedClasses', verifyJWT, async (req, res) => {
             const email = req.query.email;
@@ -258,6 +276,25 @@ async function run() {
             res.send(result);
         })
 
+        app.get('/myEnrolledClasses', verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            console.log(email)
+
+            const decodedEmail = req.decoded.email;
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'Forbidden access!' })
+            }
+
+            const query = { email: email };
+            const result = await paymentCollection.find(query).toArray();
+
+            if (!result) {
+                return res.send({ message: 'No enrolled Classes yet!', error: true });
+            }
+
+            res.send(result);
+        })
+
         app.post('/allClasses', verifyJWT, async (req, res) => {
             const newClass = req.body;
             const result = await classesCollection.insertOne(newClass);
@@ -267,11 +304,19 @@ async function run() {
         app.post('/selectedClasses', async (req, res) => {
             const selectedClass = req.body;
             // console.log(selectedClass);
+
+            const filter = { classId: selectedClass.selectedId, email: selectedClass.email }
+            const find = await paymentCollection.findOne(filter);
+
+            if (find) {
+                return res.send({ message: 'Already enrolled!', enrolled: true });
+            }
+
             const query = { selectedId: selectedClass.selectedId, email: selectedClass.email };
             const exists = await selectedClassesCollection.findOne(query);
 
             if (exists) {
-                return res.send({ message: 'Class already exists!', exists: true })
+                return res.send({ message: 'Class already exists!', exists: true });
             }
 
             const result = await selectedClassesCollection.insertOne(selectedClass);
@@ -318,10 +363,10 @@ async function run() {
             const payment = req.body;
             const insertResult = await paymentCollection.insertOne(payment);
 
-            const query = {_id:  new ObjectId(payment.selectId) };
+            const query = { _id: new ObjectId(payment.selectId) };
             const deleteResult = await selectedClassesCollection.deleteOne(query);
 
-            res.send({insertResult, deleteResult});
+            res.send({ insertResult, deleteResult });
         })
 
 
