@@ -313,7 +313,17 @@ async function run() {
             }
         })
 
-        
+        // Payment related API:-
+        app.post('/payments', verifyJWT, async (req, res) => {
+            const payment = req.body;
+            const insertResult = await paymentCollection.insertOne(payment);
+
+            const query = {_id:  new ObjectId(payment.selectId) };
+            const deleteResult = await selectedClassesCollection.deleteOne(query);
+
+            res.send({insertResult, deleteResult});
+        })
+
 
 
         // Send a ping to confirm a successful connection
