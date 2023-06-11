@@ -45,7 +45,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        client.connect();
         
         const sliderCollection = client.db('danceRevolutions').collection('slider-categories');
         const usersCollection = client.db('danceRevolutions').collection('users');
@@ -85,7 +85,7 @@ async function run() {
             res.send(result);
         })
         
-        app.get('/users/instructors', async (req, res) => {
+        app.get('/users/instructors', verifyJWT, async (req, res) => {
             const result = await usersCollection.find({role: "Instructor" }).toArray();
             res.send(result);
         })
@@ -213,7 +213,6 @@ async function run() {
             const feedback = req.body.feedback;
 
             const filter = {_id: new ObjectId(id)};
-            
             const updateDoc = {
                 $set: {
                     feedback: feedback
