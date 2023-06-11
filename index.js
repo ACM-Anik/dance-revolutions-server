@@ -3,6 +3,7 @@ const app = express()
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY);
 const port = process.env.PORT || 5000;
 
 
@@ -26,7 +27,7 @@ const verifyJWT = (req, res, next) => {
         req.decoded = decoded;
         next();
     })
-} 
+}
 
 
 
@@ -46,17 +47,18 @@ async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
         client.connect();
-        
+
         const sliderCollection = client.db('danceRevolutions').collection('slider-categories');
         const usersCollection = client.db('danceRevolutions').collection('users');
         const classesCollection = client.db('danceRevolutions').collection('classes');
         const selectedClassesCollection = client.db('danceRevolutions').collection('selectedClasses');
+        const paymentCollection = client.db('danceRevolutions').collection('payments');
 
 
         app.post('/jwt', (req, res) => {
             const user = req.body;
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'});
-            res.send({token});
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+            res.send({ token });
         })
 
         const verifyAdmin = async (req, res, next) => {
@@ -73,24 +75,24 @@ async function run() {
 
         // Slider Categories API:--------
         app.get('/slider-categories', async (req, res) => {
-            const result = await sliderCollection.find().toArray() ;
+            const result = await sliderCollection.find().toArray();
             res.send(result);
         })
 
-        
+
         // Users API:--------
         // --------------------------
-        app.get('/users',verifyJWT, verifyAdmin, async (req, res) => {
+        app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         })
-        
+
         app.get('/users/instructors', verifyJWT, async (req, res) => {
-            const result = await usersCollection.find({role: "Instructor" }).toArray();
+            const result = await usersCollection.find({ role: "Instructor" }).toArray();
             res.send(result);
         })
 
-       // isAdmin
+        // isAdmin
         app.get('/users/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
 
@@ -120,7 +122,7 @@ async function run() {
 
         app.patch('/users/instructor/:id', async (req, res) => {
             const id = req.params.id;
-            const filter = {_id: new ObjectId(id)};
+            const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
                     role: 'Instructor'
@@ -132,7 +134,7 @@ async function run() {
 
         app.patch('/users/admin/:id', async (req, res) => {
             const id = req.params.id;
-            const filter = {_id: new ObjectId(id)};
+            const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
                     role: 'Admin'
@@ -144,10 +146,10 @@ async function run() {
 
         app.post('/users', async (req, res) => {
             const user = req.body;
-            const query = {email: user.email}
+            const query = { email: user.email }
             const existed = await usersCollection.findOne(query);
-            if(existed){
-                return res.send({message: 'User already exists!'});
+            if (existed) {
+                return res.send({ message: 'User already exists!' });
             }
 
             const result = await usersCollection.insertOne(user);
@@ -184,9 +186,9 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/allClasses/approve/:id',  async (req, res) => {
+        app.patch('/allClasses/approve/:id', async (req, res) => {
             const id = req.params.id;
-            const filter = {_id: new ObjectId(id)};
+            const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
                     status: 'Approved'
@@ -196,9 +198,9 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/allClasses/deny/:id',  async (req, res) => {
+        app.patch('/allClasses/deny/:id', async (req, res) => {
             const id = req.params.id;
-            const filter = {_id: new ObjectId(id)};
+            const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
                     status: 'Denied'
@@ -208,11 +210,11 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/allClasses/feedback/:id',  async (req, res) => {
+        app.patch('/allClasses/feedback/:id', async (req, res) => {
             const id = req.params.id;
             const feedback = req.body.feedback;
 
-            const filter = {_id: new ObjectId(id)};
+            const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
                     feedback: feedback
@@ -223,12 +225,12 @@ async function run() {
         })
 
         app.get('/topClasses', async (req, res) => {
-            const result = await classesCollection.find().sort({availableSeats: 1}).limit(6).toArray();
+            const result = await classesCollection.find().sort({ availableSeats: 1 }).limit(6).toArray();
             res.send(result);
         })
 
         app.get('/approvedClasses', async (req, res) => {
-            const result = await classesCollection.find({status: "Approved" }).toArray();
+            const result = await classesCollection.find({ status: "Approved" }).toArray();
             res.send(result);
         })
 
@@ -250,6 +252,12 @@ async function run() {
             res.send(result);
         });
 
+        app.get('/selectedClasses/:id', async (req, res) => {
+            const id = req.params.id;
+            const result = await selectedClassesCollection.findOne({ _id: new ObjectId(id) });
+            res.send(result);
+        })
+
         app.post('/allClasses', verifyJWT, async (req, res) => {
             const newClass = req.body;
             const result = await classesCollection.insertOne(newClass);
@@ -263,9 +271,9 @@ async function run() {
             const exists = await selectedClassesCollection.findOne(query);
 
             if (exists) {
-                return res.send({ message: 'Class already exists!', exists: true})
+                return res.send({ message: 'Class already exists!', exists: true })
             }
-            
+
             const result = await selectedClassesCollection.insertOne(selectedClass);
             res.send(result);
         })
@@ -279,8 +287,33 @@ async function run() {
 
 
 
+        // Creating Payment Intent:---
+        // ---------------------------
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+            const { price } = req.body;
+            const amount = price * 100;
+            // console.log(typeof(price), typeof(amount));
 
+            try {
+                const paymentIntent = await stripe.paymentIntents.create({
+                    amount: amount,
+                    currency: 'usd',
+                    payment_method_types: ['card'],
+                });
 
+                console.log('PaymentIntent:', paymentIntent);
+
+                res.send({
+                    clientSecret: paymentIntent.client_secret,
+                });
+            } catch (error) {
+                console.error('Error creating PaymentIntent:', error);
+
+                res.status(500).send({ error: 'Failed to create PaymentIntent' });
+            }
+        })
+
+        
 
 
         // Send a ping to confirm a successful connection
