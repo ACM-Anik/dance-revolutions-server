@@ -172,8 +172,6 @@ async function run() {
         app.patch('/allClasses/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
-            // const find = await classesCollection.findOne(filter);
-            // console.log(find);
 
             const update = { $inc: { availableSeats: -1 } };
 
@@ -276,9 +274,9 @@ async function run() {
             res.send(result);
         })
 
+        // payment api 
         app.get('/myEnrolledClasses', verifyJWT, async (req, res) => {
             const email = req.query.email;
-            console.log(email)
 
             const decodedEmail = req.decoded.email;
             if (email !== decodedEmail) {
@@ -294,6 +292,25 @@ async function run() {
 
             res.send(result);
         })
+
+        app.get('/paymentHistory', verifyJWT, async (req, res) => {
+            const email = req.query.email;
+
+            const decodedEmail = req.decoded.email;
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'Forbidden access!' })
+            }
+
+            const query = { email: email };
+            const result = await paymentCollection.find(query).toArray();
+
+            if (!result) {
+                return res.send({ message: 'No Payment yet!', error: true });
+            }
+
+            res.send(result);
+          });
+          
 
         app.post('/allClasses', verifyJWT, async (req, res) => {
             const newClass = req.body;
