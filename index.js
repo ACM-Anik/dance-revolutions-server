@@ -302,14 +302,14 @@ async function run() {
             }
 
             const query = { email: email };
-            const result = await paymentCollection.find(query).toArray();
+            const result = await paymentCollection.find(query).sort({ date: -1 }).toArray();
 
             if (!result) {
                 return res.send({ message: 'No Payment yet!', error: true });
             }
 
             res.send(result);
-          });
+        });
           
 
         app.post('/allClasses', verifyJWT, async (req, res) => {
