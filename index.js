@@ -328,7 +328,7 @@ async function run() {
             res.send(result);
         })
 
-        app.post('/selectedClasses', verifyJWT, async (req, res) => {
+        app.post('/selectedClasses', async (req, res) => {
             const selectedClass = req.body;
             // console.log(selectedClass);
 
